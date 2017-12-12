@@ -1,2 +1,2 @@
 # digital-bijapur
-Information sharing website
+Information sharing website.
