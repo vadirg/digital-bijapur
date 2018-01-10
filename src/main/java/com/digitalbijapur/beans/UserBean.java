@@ -1,7 +1,7 @@
 package com.digitalbijapur.beans;
 
-import com.digitalbijapur.utils.digitalBijapurUtil.USER_ROLE;
-import com.digitalbijapur.utils.digitalBijapurUtil.USER_STATUS;
+import com.digitalbijapur.utils.DigitalBijapurUtil.USER_ROLE;
+import com.digitalbijapur.utils.DigitalBijapurUtil.USER_STATUS;
 
 public class UserBean {
 

@@ -5,6 +5,7 @@ package com.digitalbijapur.controller;
 
 import java.util.List;
 
+import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -17,8 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.digitalbijapur.beans.UserBean;
-import com.digitalbijapur.utils.digitalBijapurUtil.USER_ROLE;
-import com.digitalbijapur.utils.digitalBijapurUtil.USER_STATUS;
+import com.digitalbijapur.utils.DigitalBijapurUtil;
+import com.digitalbijapur.utils.DigitalBijapurUtil.USER_ROLE;
+import com.digitalbijapur.utils.DigitalBijapurUtil.USER_STATUS;
+import com.digitalbijapur.utils.ResponseBuilder;
 
 /**
  * @author GURUNAIK
@@ -36,19 +39,54 @@ public class UserProfileController {
 	 */
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
 	public ResponseEntity<String> registerUser(@RequestBody UserBean user, UriComponentsBuilder ucBuilder) {
-		// TODO Change the return type as required.
 		logger.info("Creating User : {}", user);
-		 
-       /* if (userService.isUserExist(user)) {
-            logger.error("Unable to create. A User with name {} already exist", user.getName());
-            return new ResponseEntity(new CustomErrorType("Unable to create. A User with name " + 
-            user.getName() + " already exist."),HttpStatus.CONFLICT);
-        }
-        userService.saveUser(user);*/
-		System.out.println("User is created: "+user);
- 
+		boolean isInvalidInput = false;
+		ResponseBuilder errorResponse = new ResponseBuilder();
+		if(null != user) {
+			if(null == user.getUserId()) {
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("userId", "User Id cannot be null.");
+			}
+			
+			if(null != user.getPassword() && !DigitalBijapurUtil.isValidPassword(user.getPassword())) {
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("password", "Invalid password, Please refer to password constraints.");
+			}else if(null == user.getPassword()){
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("password", "Password cannot be null.");
+			}
+			
+			if(null != user.getEmailId() && !DigitalBijapurUtil.isValidEmail(user.getEmailId())) {
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("emailId", "Invalid Email Id, Please refer to email constraints.");
+			}else if(null == user.getEmailId()){
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("emailId", "Email Id cannot be null.");
+			}
+			
+			if(null == user.getFirstName()) {
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("firstName", "First name cannot be null.");
+			}
+			
+			if(0 == user.getPhoneNumber()) {
+				isInvalidInput = true;
+				errorResponse.addKeyValuePair("phoneNumber", "Please enter phone number.");
+			}
+			
+			if(isInvalidInput) {
+				String response = errorResponse.finilizeResponse();
+				logger.debug("Response: "+ response);
+				HttpHeaders header = new HttpHeaders();
+				header.add("Content-Type", "application/json");
+				return new ResponseEntity<String>(response,header, HttpStatus.OK);
+			}
+			
+		}
+		
+		// TODO need to check what does it actually means.
         HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(ucBuilder.path("/api/user/{id}").buildAndExpand(user.getUserId()).toUri());
+        headers.setLocation(ucBuilder.path("user/register/{userId}").buildAndExpand(user.getUserId()).toUri());
         return new ResponseEntity<String>(headers, HttpStatus.CREATED);
 	}
 
