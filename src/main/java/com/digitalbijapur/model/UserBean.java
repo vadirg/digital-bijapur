@@ -6,8 +6,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
-import com.digitalbijapur.utils.DigitalBijapurUtil.USER_ROLE;
-import com.digitalbijapur.utils.DigitalBijapurUtil.USER_STATUS;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
