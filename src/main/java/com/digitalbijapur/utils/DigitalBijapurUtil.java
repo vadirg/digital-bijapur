@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class DigitalBijapurUtil {
 
 	public static enum USER_STATUS {
-		PENDING, VERIFIED, BLOCKED
+		PENDING, VERIFIED, BLOCKED;
 	};
 
 	public static enum USER_ROLE {

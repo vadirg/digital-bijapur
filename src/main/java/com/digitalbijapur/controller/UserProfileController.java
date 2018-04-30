@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.digitalbijapur.beans.UserBean;
+import com.digitalbijapur.model.UserBean;
+import com.digitalbijapur.service.IUserService;
 import com.digitalbijapur.utils.DigitalBijapurUtil;
-import com.digitalbijapur.utils.DigitalBijapurUtil.USER_ROLE;
-import com.digitalbijapur.utils.DigitalBijapurUtil.USER_STATUS;
 import com.digitalbijapur.utils.ResponseBuilder;
 
 /**
@@ -27,93 +27,90 @@ import com.digitalbijapur.utils.ResponseBuilder;
  *
  */
 @RestController
-@RequestMapping("/user")
+@RequestMapping(UserProfileController.USER_APIS)
 public class UserProfileController {
-	
-    public static final Logger logger = LoggerFactory.getLogger(UserProfileController.class);
+
+	private static final String REGISTER = "/register";
+	static final String USER_APIS = "/users/v1";
+	public static final Logger logger = LoggerFactory.getLogger(UserProfileController.class);
+
+	@Autowired
+	private IUserService userService;
 
 	/**
 	 * This API will be used to register user
-	 * @return 
+	 * 
+	 * @return
 	 */
-	@RequestMapping(value = "/register", method = RequestMethod.POST)
+	@RequestMapping(value = REGISTER, method = RequestMethod.POST)
 	public ResponseEntity<String> registerUser(@RequestBody UserBean user, UriComponentsBuilder ucBuilder) {
 		logger.info("Creating User : {}", user);
 		boolean isInvalidInput = false;
 		ResponseBuilder errorResponse = new ResponseBuilder();
-		if(null != user) {
-			if(null == user.getUserId()) {
+		if (null != user) {
+			if (null == user.getUserName()) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("userId", "User Id cannot be null.");
 			}
-			
-			if(null != user.getPassword() && !DigitalBijapurUtil.isValidPassword(user.getPassword())) {
+
+			if (null != user.getPassword() && !DigitalBijapurUtil.isValidPassword(user.getPassword())) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("password", "Invalid password, Please refer to password constraints.");
-			}else if(null == user.getPassword()){
+			} else if (null == user.getPassword()) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("password", "Password cannot be null.");
 			}
-			
-			if(null != user.getEmailId() && !DigitalBijapurUtil.isValidEmail(user.getEmailId())) {
+
+			if (null != user.getEmailId() && !DigitalBijapurUtil.isValidEmail(user.getEmailId())) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("emailId", "Invalid Email Id, Please refer to email constraints.");
-			}else if(null == user.getEmailId()){
+			} else if (null == user.getEmailId()) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("emailId", "Email Id cannot be null.");
 			}
-			
-			if(null == user.getFirstName()) {
+
+			if (null == user.getFirstName()) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("firstName", "First name cannot be null.");
 			}
-			
-			if(0 == user.getPhoneNumber()) {
+
+			if (0 == user.getPhoneNumber()) {
 				isInvalidInput = true;
 				errorResponse.addKeyValuePair("phoneNumber", "Please enter phone number.");
 			}
-			
-			if(isInvalidInput) {
+
+			if (isInvalidInput) {
 				String response = errorResponse.finilizeResponse();
-				logger.debug("Response: "+ response);
+				logger.debug("Response: " + response);
 				HttpHeaders header = new HttpHeaders();
 				header.add("Content-Type", "application/json");
-				return new ResponseEntity<String>(response,header, HttpStatus.OK);
+				return new ResponseEntity<String>(response, header, HttpStatus.OK);
 			}
-			
-		}
-		
-		// TODO need to check what does it actually means.
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(ucBuilder.path("user/register/{userId}").buildAndExpand(user.getUserId()).toUri());
-        return new ResponseEntity<String>(headers, HttpStatus.CREATED);
-	}
 
-	/**
-	 * This API will be used to get particular user Only respective logged in user
-	 * should be able to access this API.
-	 */
-	@RequestMapping("/getUser")
-	public ResponseEntity<UserBean> getUser() {
-		logger.info("Fetching user");
-		UserBean user = new UserBean();
-		user.setEmailId("vadi@gmail.com");
-		user.setFirstName("Vadiraj");
-		user.setLastName("gurunaik");
-		user.setUserId("vadirajrg");
-		user.setPassword("test123");
-		user.setPhoneNumber(9738957662L);
-		user.setUserRole(USER_ROLE.ADMIN);
-		user.setUserStatus(USER_STATUS.VERIFIED);
-		return new ResponseEntity<UserBean>(user,HttpStatus.OK);
+		}
+
+		// TODO need to check what does it actually means.
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(ucBuilder.path("user/register/{userId}").buildAndExpand(user.getUserName()).toUri());
+		return new ResponseEntity<String>(headers, HttpStatus.CREATED);
 	}
 
 	/**
 	 * This API will be used to get all users Only ADMIN User should be able to
 	 * Access this API IS this required ??
 	 */
-	@RequestMapping("/getUsers")
+	@RequestMapping(value = "/getUsers", method = RequestMethod.GET)
 	public List<UserBean> getUsers() {
+		logger.info("Fetching all users");
+		return userService.findAll();
+	}
+
+	/**
+	 * This API will be used to get particular user Only respective logged in user
+	 * should be able to access this API.
+	 */
+	@RequestMapping("/getUser/{userName}")
+	public List<UserBean> getUserByUsername() {
 		// TODO Change the return type as required.
 		return null;
 	}
