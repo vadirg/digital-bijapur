@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.digitalbijapur.domain.ArticleStatus;
+import com.digitalbijapur.exception.ArticleNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.digitalbijapur.domain.Article;
@@ -19,7 +20,7 @@ public class ArticleServiceImpl implements ArticleService{
 	}
 
 	@Override
-	public Article findArticleById(Long id) {
+	public Article findArticleById(Long id) throws ArticleNotFoundException {
 		return null;
 	}
 
@@ -27,7 +28,17 @@ public class ArticleServiceImpl implements ArticleService{
 	public Article createArticle(Article article) {
 		return null;
 	}
-	
-	
+
+	@Override
+	public Article updateArticle(Article article) throws ArticleNotFoundException {
+		throw new ArticleNotFoundException();
+		//return null;
+	}
+
+	@Override
+	public Article deleteArticleById(Long id) throws ArticleNotFoundException {
+		return null;
+	}
+
 
 }

@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,8 +27,8 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
@@ -46,7 +47,7 @@ public class ArticleControllerTest {
 	}
 
 	@Test
-	public void findAllArticles_ShouldReturnAllArticles() throws Exception {
+	public void findAllArticles_ArticlesFound_ShouldReturnAllFoundArticles() throws Exception {
 
 		List<Article> articles = Arrays.asList(
 												Article.builder().setId(1L).setTitle("Title 1").setContent("Content 1").setStatus(ArticleStatus.APPROVED).build(),
@@ -71,7 +72,7 @@ public class ArticleControllerTest {
 	}
 
 	@Test
-	public void findArticleById_ShouldReturnOneArticle() throws Exception {
+	public void findArticleById_ArticleFound_ShouldReturnFoundArticle() throws Exception {
 
 		Article article = Article.builder().setId(1L).setTitle("Title 1").setContent("Content 1").build();
 		
@@ -113,7 +114,7 @@ public class ArticleControllerTest {
 	}
 	
 	@Test
-	public void createArticle_BadRequest_ShouldReturnValidationErrors() throws Exception {
+	public void createArticle_TitleAndContentErrors_ShouldReturnValidationErrorsForTitleAndContent() throws Exception {
 
 		Article article = Article.builder().setTitle("").setContent("content").build();
 
@@ -166,4 +167,145 @@ public class ArticleControllerTest {
 		assertThat(articleArgument.getTitle(), is("title"));
 		assertThat(articleArgument.getContent(), is(content));
 	}
+
+	@Test
+    public void deleteArticleById_ArticleFound_ShouldDeleteArticleAndReturnIt() throws Exception {
+        Article deletedArticle = Article.builder().setId(1L).setTitle("Title 1").setContent("Content 1").build();
+
+        when(articleServiceMock.deleteArticleById(1L)).thenReturn(deletedArticle);
+
+        mockMvc.perform(delete("/api/v1/articles/{id}",1L))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Title 1")))
+                .andExpect(jsonPath("$.content", is("Content 1")))
+                ;
+
+        verify(articleServiceMock, times(1)).deleteArticleById(1L);
+        verifyNoMoreInteractions(articleServiceMock);
+    }
+
+    @Test
+    public void deleteArticleById_ArticleNotFoundException_ShouldReturnHttpStatusCode404() throws Exception {
+        when(articleServiceMock.deleteArticleById(1L)).thenThrow(new ArticleNotFoundException("Article not found with id : 1"));
+
+        mockMvc.perform(delete("/api/v1/articles/{id}", 1L))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.title", is("Resource not found")))
+                .andExpect(jsonPath("$.status", is(404)))
+                .andExpect(jsonPath("$.detail", is("Article not found with id : 1")))
+                .andExpect(jsonPath("$.timestamp", is(notNullValue())))
+                .andExpect(jsonPath("$.developerMessage", is("com.digitalbijapur.exception.ArticleNotFoundException")))
+                .andExpect(jsonPath("$.errors").isEmpty())
+                ;
+
+        verify(articleServiceMock, times(1)).deleteArticleById(1L);
+        verifyNoMoreInteractions(articleServiceMock);
+    }
+
+    @Test
+    public void updateArticle_EmptyArticle_ShouldReturnValidationErrorForTitle() throws Exception {
+	    Article article = Article.builder().setId(1L).build();
+
+	    mockMvc.perform(put("/api/v1/articles/{id}",1L).contentType(MediaType.APPLICATION_JSON_UTF8).content(TestUtil.convertObjectToJsonBytes(article)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.title", is("Validation failed")))
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.detail", is("Input validation failed")))
+                .andExpect(jsonPath("$.timestamp", is(notNullValue())))
+                .andExpect(jsonPath("$.developerMessage", is("org.springframework.web.bind.MethodArgumentNotValidException")))
+                .andExpect(jsonPath("$.errors").isNotEmpty())
+                .andExpect(jsonPath("$.errors.title[*].code", containsInAnyOrder("NotEmpty")))
+                .andExpect(jsonPath("$.errors.title[*].message", containsInAnyOrder("Title should not be empty")))
+                ;
+
+        verifyZeroInteractions(articleServiceMock);
+    }
+
+    @Test
+    public void updateArticle_TitleAndContentErrors_ShouldReturnValidationErrorsForTitleAndContent() throws Exception {
+	    String sample = TestUtil.createStringWithLength(90);
+	    Article article = Article.builder().setId(1L).setTitle(sample).setContent(sample).build();
+
+	    mockMvc.perform(put("/api/v1/articles/{id}",1L).contentType(MediaType.APPLICATION_JSON_UTF8).content(TestUtil.convertObjectToJsonBytes(article)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.title", is("Validation failed")))
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.detail", is("Input validation failed")))
+                .andExpect(jsonPath("$.timestamp", is(notNullValue())))
+                .andExpect(jsonPath("$.developerMessage", is("org.springframework.web.bind.MethodArgumentNotValidException")))
+                .andExpect(jsonPath("$.errors").isNotEmpty())
+                .andExpect(jsonPath("$.errors.title[*].code", containsInAnyOrder("Length")))
+                .andExpect(jsonPath("$.errors.title[*].message", containsInAnyOrder("Title should not be more than 80 characters")))
+                .andExpect(jsonPath("$.errors.content[*].code", containsInAnyOrder("Length")))
+                .andExpect(jsonPath("$.errors.content[*].message", containsInAnyOrder("Content should be greater than or equal to 100 characters")))
+                ;
+
+        verifyZeroInteractions(articleServiceMock);
+    }
+
+    @Test
+    public void updateArticle_ArticleNotFoundException_ShouldReturnHttpStatusCode404() throws Exception {
+
+        String title = TestUtil.createStringWithLength(70);
+        String content = TestUtil.createStringWithLength(110);
+        Article article = Article.builder().setId(1L).setTitle(title).setContent(content).build();
+
+        when(articleServiceMock.updateArticle(Mockito.any(Article.class))).thenThrow(new ArticleNotFoundException("Article not found with id : 1"));
+
+        mockMvc.perform(put("/api/v1/articles/{id}",1L).contentType(MediaType.APPLICATION_JSON_UTF8).content(TestUtil.convertObjectToJsonBytes(article)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.title", is("Resource not found")))
+                .andExpect(jsonPath("$.status", is(404)))
+                .andExpect(jsonPath("$.detail", is("Article not found with id : 1")))
+                .andExpect(jsonPath("$.timestamp", is(notNullValue())))
+                .andExpect(jsonPath("$.developerMessage", is("com.digitalbijapur.exception.ArticleNotFoundException")))
+                .andExpect(jsonPath("$.errors").isEmpty())
+                ;
+
+        ArgumentCaptor<Article> articleCaptor = ArgumentCaptor.forClass(Article.class);
+        verify(articleServiceMock, times(1)).updateArticle(articleCaptor.capture());
+        verifyNoMoreInteractions(articleServiceMock);
+
+        Article articleArgument = articleCaptor.getValue();
+        assertThat(articleArgument.getId(), is(1L));
+        assertThat(articleArgument.getTitle(), is(title));
+        assertThat(articleArgument.getContent(), is(content));
+    }
+
+    @Test
+    public void updateArticle_ArticleFound_ShouldUpdateArticleAndReturnIt() throws Exception {
+		String title = TestUtil.createStringWithLength(70);
+		String content = TestUtil.createStringWithLength(110);
+		Article article = Article.builder().setId(1L).setTitle(title).setContent(content).setStatus(ArticleStatus.PENDING).setImages(new ArrayList<>()).setCategories(new ArrayList<>()).build();
+		Article updatedArticle  = Article.builder().setId(1L).setTitle(title).setContent(content).setStatus(ArticleStatus.PENDING).setImages(new ArrayList<>()).setCategories(new ArrayList<>()).build();
+
+		when(articleServiceMock.updateArticle(Mockito.any(Article.class))).thenReturn(updatedArticle);
+
+		mockMvc.perform(put("/api/v1/articles/{id}",1L).contentType(MediaType.APPLICATION_JSON_UTF8).content(TestUtil.convertObjectToJsonBytes(article)))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+				.andExpect(jsonPath("$", is(notNullValue())))
+				.andExpect(jsonPath("$.id", is(1)))
+				.andExpect(jsonPath("$.title", is(title)))
+				.andExpect(jsonPath("$.content", is(content)))
+				.andExpect(jsonPath("$.status", is("PENDING")))
+				.andExpect(jsonPath("$.images", is(notNullValue())))
+				.andExpect(jsonPath("$.categories", is(notNullValue())))
+				;
+
+		ArgumentCaptor<Article> articleCaptor = ArgumentCaptor.forClass(Article.class);
+		verify(articleServiceMock, times(1)).updateArticle(articleCaptor.capture());
+		verifyNoMoreInteractions(articleServiceMock);
+
+		Article articleArgument = articleCaptor.getValue();
+		assertThat(articleArgument.getId(), is(1L));
+		assertThat(articleArgument.getTitle(), is(title));
+		assertThat(articleArgument.getContent(), is(content));
+    }
 }

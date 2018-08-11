@@ -6,7 +6,6 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,5 +39,19 @@ public class ArticleController {
 		Article createdArticle = articleService.createArticle(article);
 		
 		return new ResponseEntity<>(createdArticle, HttpStatus.CREATED);
+	}
+
+	@PutMapping("/{id}")
+	public ResponseEntity<Article> updateArticleById(@PathVariable("id") Long id, @Valid @RequestBody Article article) throws ArticleNotFoundException {
+		Article updatedArticle = articleService.updateArticle(article);
+
+		return new ResponseEntity<>(updatedArticle,HttpStatus.OK);
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Article> deleteArticleById(@PathVariable("id") Long id) throws ArticleNotFoundException {
+		Article deletedArticle = articleService.deleteArticleById(id);
+
+		return new ResponseEntity<>(deletedArticle,HttpStatus.OK);
 	}
 }
