@@ -1,5 +1,7 @@
 package com.digitalbijapur.config;
 
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,20 +30,23 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     @Autowired
 	private TokenStore tokenStore;
 
+    @Autowired
+    private DataSource dataSource;
+    
 	@Autowired
 	private AuthenticationManager authenticationManager;
 	
 	@Override
 	public void configure(ClientDetailsServiceConfigurer configurer) throws Exception {
 
-		configurer
-				.inMemory()
-				.withClient(DIJB_CLIEN_ID)
-				.secret(DIJB_CLIENT_SECRET)
-				.authorizedGrantTypes(GRANT_TYPE, AUTHORIZATION_CODE, REFRESH_TOKEN, IMPLICIT )
-				.scopes(SCOPE_READ, SCOPE_WRITE, TRUST)
-				.accessTokenValiditySeconds(ACCESS_TOKEN_VALIDITY_SECONDS).
-				refreshTokenValiditySeconds(FREFRESH_TOKEN_VALIDITY_SECONDS);
+		configurer.jdbc(dataSource);
+//				.inMemory()
+//				.withClient(DIJB_CLIEN_ID)
+//				.secret(DIJB_CLIENT_SECRET)
+//				.authorizedGrantTypes(GRANT_TYPE, AUTHORIZATION_CODE, REFRESH_TOKEN, IMPLICIT )
+//				.scopes(SCOPE_READ, SCOPE_WRITE, TRUST)
+//				.accessTokenValiditySeconds(ACCESS_TOKEN_VALIDITY_SECONDS).
+//				refreshTokenValiditySeconds(FREFRESH_TOKEN_VALIDITY_SECONDS);
 	}
 
 	@Override
